@@ -1,0 +1,151 @@
+---
+title: "Third_session"
+author: "Reka Solymosi (supplementing material produced as well by Juanjo Medina)"
+date: "25/01/2018"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+#Interactive maps with Leaflet
+
+So this is a super brief intro into some of the cool things you can do with leaflet. There are comprehensive tutorials available online, for example [here](https://rstudio.github.io/leaflet/).
+
+[Leaflet](http://leafletjs.com/) is the leading open-source JavaScript library for mobile-friendly interactive maps. It is very most popular, used by websites ranging from The New York Times and The Washington Post to GitHub and Flickr, as well as GIS specialists like OpenStreetMap, Mapbox, and CartoDB.
+
+
+In this section of the lab we will learn how to make really flashy looking maps using leaflet. 
+
+You will need to have installed the following packages to follow along:
+
+```{r, eval=FALSE}
+install.packages("leaflet") #for mapping
+install.packages("RColorBrewer") #for getting nice colours for your maps
+```
+
+
+Once you have them installed, load them up with the `library()` function:
+
+##Making a map
+
+To make a map, just load the leaflet library:
+
+```{r}
+library(leaflet)
+```
+
+You then create a map with this simple bit of code:
+
+```{r}
+m <- leaflet() %>%
+  addTiles()  
+```
+
+And just print it:
+```{r}
+m  
+```
+
+##Adding some content:
+
+You might of course want to add some content to your map. 
+
+##Adding points manuall:
+
+You can add a point manually:
+
+```{r}
+m <- leaflet() %>%
+  addTiles()  %>% 
+  addMarkers(lng=-2.230899, lat=53.464987, popup="You are here")
+m  
+```
+
+Or many points manually:
+
+```{r}
+
+latitudes = c(53.464987, 53.472726, 53.466649) 
+longitudes = c(-2.230899, -2.245481, -2.243421) 
+popups = c("You are here", "Here is another point", "Here is another point") 
+df = data.frame(latitudes, longitudes, popups)      
+
+m <- leaflet(data = df) %>%
+  addTiles()  %>%  
+  addMarkers(lng=~longitudes, lat=~latitudes, popup=~popups)
+m  
+```
+
+##Change the basemap
+
+You can change the background as well. You can find a list of different basemaps [here](http://leaflet-extras.github.io/leaflet-providers/preview/index.html).
+
+```{r}
+m <- leaflet(data = df) %>%
+  addProviderTiles("Stamen.Toner") %>% 
+  addMarkers(lng=~longitudes, lat=~latitudes, popup=~popups)
+m  
+```
+
+
+##Adding data from elsewhere
+
+You will most likely want to add data to your map form external sources, rather than manually creating points. 
+
+For example, I illustrate here with data from [Manchester Open Data](http://open.manchester.gov.uk/) about public toilets: 
+
+```{r}
+publicToilets <- read.csv("http://www.manchester.gov.uk/open/download/downloads/id/171/public_toilets.csv")
+```
+
+Often spatial data will not come with latitude/longitude format, but with easting and northing. Leaflet (as far as I know) prefers lat/long so we might have to convert from BNG to WGS84. 
+
+First thing we might notice is that the coordinates are in Easting and Northing format, rather than Latitude/ Longitude: 
+
+```{r}
+publicToilets[,8:9]
+```
+
+There is a comprehensive step-by-step tutorial on converting coordinates [here](http://www.alex-singleton.com/R-Tutorial-Materials/7-converting-coordinates.pdf). I'll just briefly demo this here.
+
+##Reprojecting coordinates
+
+
+```{r}
+#the library I'm using here is rgdal
+library(rgdal)
+
+#these are the variables for the coordinate system types
+bng = "+init=epsg:27700"
+latlong = "+init=epsg:4326"
+
+#create coords
+coords <- cbind(Easting = as.numeric(as.character(publicToilets$GeoX)),
+                Northing = as.numeric(as.character(publicToilets$GeoY)))
+
+# create a SpatialPointsDataFrame
+publicToiletsSPDF <- SpatialPointsDataFrame(coords, data = publicToilets, proj4string = CRS(bng))
+
+#reproject with spTransform
+publicToiletsSPDF_latlng <- spTransform(publicToiletsSPDF, CRS(latlong))
+
+#extract coords into a column
+publicToiletsSPDF_latlng@data$lng <- publicToiletsSPDF_latlng@coords[,1]
+publicToiletsSPDF_latlng@data$lat <- publicToiletsSPDF_latlng@coords[,2]
+
+```
+
+Now you should have a reprojected spatial points data frame with latitude and longitude, ready to be mapped: 
+
+```{r}
+m <- leaflet(data = publicToiletsSPDF_latlng@data) %>%
+  addProviderTiles("Stamen.Toner")  %>%  
+  addMarkers(lng=~lng, lat=~lat, popup=~LocationText)
+m  
+```
+
+
+
