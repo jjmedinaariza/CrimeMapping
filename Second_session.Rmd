@@ -186,7 +186,7 @@ crimes <- read.csv("2017-11/2017-11-greater-manchester-street.csv")
 ```
 
 ```{r, echo=FALSE}
-crimes <- read.csv("https://raw.githubusercontent.com/maczokni/2018_labs/master/data/2017-11-greater-manchester-street.csv")
+crimes <- read.csv("https://www.dropbox.com/s/f5jwoum9u6c8odc/2017-11-greater-manchester-street.csv?dl=1")
 ```
 
 You might notice that `crimes` has appeared in your work environment window. It will tell you how many observations (rows - and incidentally the number of recorded crimes in November 2017 within the GMP jurisdiction) and how many variables (columns) your data has.
@@ -404,9 +404,15 @@ To read in your data, you will need to know the path to where you have saved it.
 
 Let's create an object and assign it our shapefile's name:
 
-```{r}
+```{r, eval=FALSE}
 #Remember to use the appropriate pathfile in your case
 shp_name <- "BoundaryData/england_lsoa_2011.shp"
+```
+
+```{r, echo=FALSE}
+#sorry I had to use my own filepath here, I couldn't figure out how to read from dropbox link or github, just change back to your own path when knitting...
+
+shp_name <- "/Users/reka/Dropbox (The University of Manchester)/31152_60142 GIS and Crime Mapping/CrimeMapping/BoundaryData/england_lsoa_2011.shp"
 ```
 
 
