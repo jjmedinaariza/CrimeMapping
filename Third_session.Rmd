@@ -1,6 +1,6 @@
 ---
 title: "More on thematic maps"
-author: "Juanjo Medina and Reka Solymosy"
+author: "Juanjo Medina and Reka Solymosi"
 date: "25/01/2018"
 output:
   html_document: default
@@ -14,7 +14,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 #Intro and recap
 
-Last week we show you fairly quickly how to create maps of spatial point patterns using ggmap and we also introduced the tmap for thematic maps. Besides doing that we introduced a set of key concepts we hope you have continued studying over the week and discuss the sf package for storing spatial objects in R. This week we will carry on where we left the session last week. In the presentations last week we introduced varios kind of thematic maps and earlier today we discussed in detail issues with choropleth maps. So the focus of today's lab is going to be around thematic maps and some of the choices we discussed in our presentation last week and earlier today. We will also introduce faceting and small multiples, which is a format for comparing the geographical distribution of different social phenomena. For this session we will be using the spatial object that you created last week and complement it with additional information from the census. So first of all you will have to rerun the code you used to create the "manchester_lsoa" sf object. Apart from doing so, you want to start your session loading the libraries you know for sure you will need:
+Last week we showed you fairly quickly how to create maps of spatial point patterns using ggmap and we also introduced the tmap for thematic maps. Besides doing that we introduced a set of key concepts we hope you have continued studying over the week and discuss the sf package for storing spatial objects in R. This week we will carry on where we left the session last week. In the presentations last week we introduced varios kind of thematic maps and earlier today we discussed in detail issues with choropleth maps. So the focus of today's lab is going to be around thematic maps and some of the choices we discussed in our presentation last week and earlier today. We will also introduce faceting and small multiples, which is a format for comparing the geographical distribution of different social phenomena. For this session we will be using the spatial object that you created last week and complement it with additional information from the census. So first of all you will have to rerun the code you used to create the "manchester_lsoa" sf object. Apart from doing so, you want to start your session loading the libraries you know for sure you will need:
 
 ```{r, warnings=FALSE}
 library(sf)
@@ -53,20 +53,20 @@ If you wanted to bring this shapfile back into R at any future point, you would 
 
 The *tmap* package was developed to easily produce thematic maps. It is inspired by the ggplot2 packaged and the layered grammar of graphics (if you did the optional ggplot2 training this will make sense to you). It was written by Martjin Tennekes a Dutch data scientist. There are a number of [vignettes in the CRAN repository](https://cran.r-project.org/web/packages/tmap/index.html) that you can explore and the [GitHub repo for this package](https://github.com/mtennekes/tmap), GitHub is a collaborative website used by software developers and data scientist, also contains a useful readme section with additional resources to familiarise youself with this package. Each map can be plotted as a static map (*plot mode*) and shown interactively (*view mode*). We will start by focusing on static maps.
 
-Every time you use this package you will need a line of code that specifies the spatial object you will be using. Although originally developed to handle sp objects only, it now also has support for sf objects. For this we pass the tm_shape() function and inside we specify the name of the spatial object we are using. On its own, this will do nothing. We need to add additional functions to specify what we are doing with that spatial object.
+Every time you use this package you will need a line of code that specifies the spatial object you will be using. Although originally developed to handle sp objects only, it now also has support for sf objects. For this we pass the tm_shape() function and inside we specify the name of the spatial object we are using. On its own, this will do nothing. We need to add additional functions to specify what we are doing with that spatial object. If you try to run this line on its own, you'll get an error telling you you must "Specify at least one layer after each tm_shape". 
 
 ```{r, eval=FALSE}
 tm_shape(manchester_lsoa)
 ```
 
-The main plotting method consists of elements that we can add. The first element is the tm_shape specifying the spatial object, and then we can add a series of elements speficying layers in the visualisation. They can include polygons, symbols, polylines, raster, and text labels as base layers. Last week we saw how we could use tm_polygon to add polygons. Let's add such a layer:
+The main plotting method consists of elements that we can add. The first element is the tm_shape function specifying the spatial object, and then we can add a series of elements speficying layers in the visualisation. They can include polygons, symbols, polylines, raster, and text labels as base layers. Last week we saw how we could use tm_polygon to add polygons. Let's add such a layer:
 
 ```{r}
 tm_shape(manchester_lsoa) + 
   tm_polygons()
 ```
 
-Given that we are not passing any additional arguments all we are getting is a map with the shape of the geographies that we are representing, the census LSOAs for Manchester city. We can, however, ask R to produce a choropleth map by mapping the colour of the areas to a variable in our data table. In tmap we need to denote our variables between quotes. The first argument we pass then would be the name of the variable we want to visualise. If you remember we have a count for crimes ("count"), so let's do that.
+Given that we are not passing any additional arguments all we are getting is a map with the shape of the geographies that we are representing, the census LSOAs for Manchester city. We can, however, ask R to produce a choropleth map by mapping the values of a variable in our data table using colour.  In tmap we need to denote our variables between quotes. The first argument we pass then would be the name of the variable we want to visualise. If you remember we have a count for crimes ("count"), so let's visualise that by creating a thematic map.
 
 ```{r}
 tm_shape(manchester_lsoa) + 
@@ -112,36 +112,99 @@ For comparing the effects of using different methods we can use small multiples.
 
 There are different ways of creating small multiples, some of which are quicker but a bit more restricted. Here we are going to use tmap_arrange(). With tmap_arrange first we need to create the maps we want and then arrange them togeter.
 
+
+Let's make four maps, each one using a different classification method: Equal interval, Natural breaks (Jenks), Quantile, and Unclassed (no classification). 
+
+
+For each map, instead of visualising them one by one, just assign them to a new object. Let's call them map1, map2, map3 and map4. 
+
+
+So let's make map1. This will create a choropleth map using equal intervals as discussed earlier in the presentation:
+
+
 ```{r}
-#This will create a choropleth map using equal intervals as discussed earlier in the presentation
-map1 <- tm_shape(manchester_lsoa) + 
-  tm_fill("count", style="equal", title = "Equal") +
-  tm_layout(legend.position = c("right", "bottom"), legend.title.size = 0.8,
+map1 <- tm_shape(manchester_lsoa) +                   #use tm_shape function to specify spatial object
+  tm_fill("count", style="equal", title = "Equal") +  #use tm_fill to specify variable, classification method, and give the map a title
+  tm_layout(legend.position = c("right", "bottom"),   #use tm_layout to make the legend look nice
+            legend.title.size = 0.8,
             legend.text.size = 0.5)
-#This uses the jenks method often preferred by geographers
+
+```
+
+
+
+Now create map2, with the jenks method often preferred by geographers:
+
+
+```{r}
+ 
 map2 <- tm_shape(manchester_lsoa) + 
   tm_fill("count", style="jenks", title = "Jenks") +
-  tm_layout(legend.position = c("right", "bottom"), legend.title.size = 0.8,
+  tm_layout(legend.position = c("right", "bottom"), 
+            legend.title.size = 0.8,
             legend.text.size = 0.5)
-#This uses the quantile method often preferred by epidemiologists
+
+```
+
+
+
+Now create map3, with the quantile method often preferred by epidemiologists:
+
+
+
+```{r}
+
 map3 <- tm_shape(manchester_lsoa) + 
   tm_fill("count", style="quantile", title = "Quantile") +
-  tm_layout(legend.position = c("right", "bottom"), legend.title.size = 0.8,
+  tm_layout(legend.position = c("right", "bottom"), 
+            legend.title.size = 0.8,
             legend.text.size = 0.5)
+
+```
+
+
+
+And finally make map4, an unclassed choropleth map, which maps the values of our variable to a smooth gradient.
+
+
+```{r}
 #This uses an unclassed choropleth map, it maps the values of our variable to a smooth gradient
 map4 <- tm_shape(manchester_lsoa) + 
   tm_fill("count", style="cont", title = "Unclassed") +
   tm_borders(alpha=0.1) +
-  tm_layout(legend.position = c("right", "bottom"), legend.title.size = 0.8,
+  tm_layout(legend.position = c("right", "bottom"), 
+            legend.title.size = 0.8,
             legend.text.size = 0.5)
-#Notice we are not plotting the maps, we are storing them into R objects
 
+```
+
+
+
+Notice that we are not plotting the maps, we are storing them into R objects. This way they are saved, and you can call them later, which is what we need in order to plot them together using the `tmap_arrange()` function. 
+
+
+So if you wanted to map just map3 for example, all you need to do, is call the map3 object. Like so: 
+
+
+```{r}
+
+map3
+
+```
+
+
+But now we will plot all 4 maps together, arranged using the tmap_arrange() function. Like so: 
+
+
+
+```{r}
 #And now we deploy tmap_arrange to plot these maps together
 tmap_arrange(map1, map2, map3, map4) 
 
 ```
 
-*Homework 2: Discuss which of these classification methods gives you the best representation of crime in Manchester city*
+*Homework 2: Discuss which of these classification methods gives you the best visualisation of crime in Manchester city*
+
 
 #Using graduated symbols
 
@@ -156,16 +219,17 @@ tm_shape(manchester_lsoa) +
 First thing you see is that we loose the context (provided by the polygon borders) that we had earlier. The border.lwd argument set to NA in the tm_symbols is asking R not to draw a border to the circles. Whereas tm_borders brings back a layer with the borders of the polygons representing the different LSOAs in Manchester city.
 
 ```{r}
-tm_shape(manchester_lsoa) + 
-  tm_bubbles("count", border.lwd=NA) +
-  tm_borders(alpha=0.1) +
-  tm_layout(legend.position = c("right", "bottom"), legend.title.size = 0.8,
+tm_shape(manchester_lsoa) +                         #use tm_shape function to specify spatial object
+  tm_bubbles("count", border.lwd=NA) +              #use tm_bubbles to add the bubble visualisation, but set the 'border.lwd' parameter to NA, meaning no symbol borders are drawn
+  tm_borders(alpha=0.1) +                           #add the LSOA border outlines using tm_borders, but set their transparency using the alpha parameter (0 is totally transparent, 1 is not at all)
+  tm_layout(legend.position = c("right", "bottom"), #use tm_layout to make the legend look nice
+            legend.title.size = 0.8,
             legend.text.size = 0.5)
 ```
 
 #Bringing additional census data in
 
-Last week you learn how to obtain crime data from the police UK website and you also develop the skills to obtain shapefiles with the boundaries for the UK census geographies. Specifically you learnt how to obtain LSOAs boundaries. Then we taught you how to join these data tables using dplyr. If you open your manchester_lsoa object you will see that at the moment you only have one field in this dataframe providing you with statistical information. However, there is a great deal of additional information that you could add to these data frame. Given that you are using census geographies you could add to it all kind of socio demographic variables available from the census. 
+Last week you learned how to obtain crime data from the police UK website and you also develop the skills to obtain shapefiles with the boundaries for the UK census geographies. Specifically you learnt how to obtain LSOAs boundaries. Then we taught you how to join these data tables using dplyr. If you open your manchester_lsoa object you will see that at the moment you only have one field in this dataframe providing you with statistical information. However, there is a great deal of additional information that you could add to these data frame. Given that you are using census geographies you could add to it all kind of socio demographic variables available from the census. 
 
 You may want to watch [this 4 minute video](https://www.youtube.com/watch?v=AzK04BOFd_s#t=17) to get a sense for how to obtain the data. If you don't have headphones make sure you read [this brief tutorial](http://infuse.ukdataservice.ac.uk/help/tutorial.html) before carrying on. We are going to get some data for Manchester city LSOAs. Let me warn you though, the census data portal is one of the closest things to hell you are going to come across on the internet. Using it will be a good reminder of wy point and click interfaces can suck the life out of you.  
 
