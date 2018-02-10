@@ -250,9 +250,8 @@ Now you will need to practice navigating the Infuse system to generate a data ta
 Once you have those fields click next to get the data and download the file. Unzip them and open the .csv file in Excel. If you view the data in Excel you will notice it is a bit untidy. The first row has no data but the labels for the variable names and the second row has the data for Manchester as a whole. We don't need those rows. Because this data is a bit untidy we are going to use read_csv from the readr package rather than the base read.csv function.
 
 ```{r}
-#The name of the file may be slightly different in your case. 
 library(readr)
-census_lsoa_m <- read_csv("Data_AGE_APPSOCG_DAYPOP_UNIT_URESPOP.csv")
+census_lsoa_m <- read_csv("https://www.dropbox.com/s/e4nkqmefovlsvib/Data_AGE_APPSOCG_DAYPOP_UNIT_URESPOP.csv?dl=1")
 ```
 
 Notice that even all the variables that begin with f are numbers they have been read into R as characters. This is to do with the fact the first two lines do not represent cases and do have characters. R is coercing everything into character vectors. Let's clean this a bit.
@@ -349,15 +348,21 @@ tmap_mode("view")
 map5
 ```
 
-You may find it useful to shift to the OpenStreetMap by clicking in the box to the left, since it will give you a bit more contextual information than the default CartoDB basemap.
+You may find it useful to shift to the OpenStreetMap view by clicking in the box to the left, since it will give you a bit more contextual information than the default CartoDB basemap.
+
+
+In the first lecture we spoke a bit about Open Street Map, but if you're interested it's definitely worth reading up on. As I mentioned, Open Street Map is a non-profit foundation whose aim is to support and enable the development of freely-reusable geospatial data, and relies heavily on volunteers participating in this project to map their local areas. You can have a look [here](https://www.hotosm.org/get-involved/disaster-mapping) for ongoing humanitarian projects, or read [here](https://wiki.openstreetmap.org/wiki/Mapping_parties) about the mapping parties I told you about. At the very least though, in the spirit of open source and crowdsourcing, take a moment to appreciate that all these volunteers of people just like you have contributed to creating such a detailed geographical database of our world. That's definitely something kinda cool to think about! 
+
 
 ![](img/shiftingbasemap.PNG)
+
 
 *Homework 4: What areas of the city seem to have the largest concentration of crime? Why? Does deprivation help you to understand the patterns? What's going on in the LSOA farthest to the South? Why does it look like a crime hotspot in this map and not in the one using the workday population?*
 
 # More on small multiples and point pattern maps
 
 Last week we showed you how to visualise point patterns using data from the Police UK website. One of the homeworks ask you to discuss the map you produced using ggmap in which you use type of crimes to colour your points. One of the problems with that map is that you had so many levels within that variable that it was very difficult to tell what was what. Even some of the colors in different categories were not that different from each other. That's a typical situation where faceting or using small multiples would have been a better solution.
+
 
 You can use small multiples within the ggmap environment. Last week you learnt how to display the points using geom_point and passing a colour argument there. In order to represent each type of point in a separate map you add an additional call to facet_wrap where we will use the formula method (~) to indicate the variable we are using to identify each map. Essentially this will ask R to produce a map for each type of crime.
 
@@ -396,23 +401,113 @@ tm_shape(crime_sf) +
   tm_dots(alpha=0.1) 
 ```
 
-You can also use basemaps when working on the plot mode of tmap. We could for example use OpenStreet maps. We use the read_osm function from tmaptools package to do that, by passing crime_sf as an argument we will be bounding the scope of the basemap to the area covered by our point pattern of crimes. We will also need to load the OpenStreetMap for this to work. We will then add the basemap layer using the qtm function that is a function provided by tmap for quick plotting.
+You can also use basemaps when working on the plot mode of tmap. We could for example use OpenStreet maps. We use the read_osm function from tmaptools package to do that, by passing crime_sf as an argument we will be bounding the scope of the basemap to the area covered by our point pattern of crimes. We will also need to load the OpenStreetMap package for this to work. 
+
+
+Remember that the first time you use a package you always have to install it, using the `install.packages()` function!
+
+
+Now load the OpenStreetMap library into your working environment with the `library()` function: 
+
+
+```{r, eval=FALSE}
+
+library(OpenStreetMap)
+
+```
+
+
+**Mac Users's Note**: So if you're on a Mac, it's possible that at this point you've experienced an error. It might look something like this: 
+
+
+`Error: package or namespace load failed for ‘OpenStreetMap’:
+ .onLoad failed in loadNamespace() for 'rJava', details:
+  call: dyn.load(file, DLLpath = DLLpath, ...)
+  error: unable to load shared object '/Library/Frameworks/R.framework/Versions/3.4/Resources/library/rJava/libs/rJava.so':
+  dlopen(/Library/Frameworks/R.framework/Versions/3.4/Resources/library/rJava/libs/rJava.so, 6): Library not loaded: @rpath/libjvm.dylib
+  Referenced from: /Library/Frameworks/R.framework/Versions/3.4/Resources/library/rJava/libs/rJava.so
+  Reason: image not found`
+  
+
+This is because of some drama between the rJava and your Mac OS's dealing with Java. Do not despair though, the solution is simple. Open up your `Terminal` app. This is your command line for Mac. You might have used before for other things, or you might not. If you don't know what I'm on about with `Terminal` have a look at this [helpful tutorial](https://www.macworld.co.uk/feature/mac-software/how-use-terminal-on-mac-3608274/).
+
+
+Now, once you have Terminal open, all you have to do is copy and paste the code below, and press Enter to run it:
+
+
+`sudo ln -f -s $(/usr/libexec/java_home)/jre/lib/server/libjvm.dylib /usr/local/lib`
+
+
+After you press Enter, Terminal will ask you for your password. This is the password to your laptop. Type in your password, and hit enter again. Once that's all done, you can go back to R, and you will have to load a package called `rJava()`. Like so: 
+
+
+```{r}
+library(rJava)
+```
+
+
+
+Now you can again try loading the OpenStreetMap package. 
+
+
+```{r}
+
+library(OpenStreetMap)
+
+```
+
+
+Hopefully should all work smoothly now!
+
+
+
+
+You will also need another package called `tmaptools`. This gets installed when you installed tmap, but you still have to load it up. 
 
 ```{r}
 library(tmaptools)
-library(OpenStreetMap)
+
+```
+
+
+We will then add the basemap layer using the qtm function that is a function provided by tmap for quick plotting.
+
+
+First, create an object, let's call it `gm_osm`, by reading Open Street Map (OSM) data with the `read_osm()` function. This function reads and returns OSM tiles are read and returns as a spatial raster, or queries vectorized OSM data and returns as spatial polygons, lines, and/or points.   
+
+
+```{r}
+
 gm_osm <- read_osm(crime_sf)
 
-qtm(gm_osm) + tm_shape(crime_sf) + 
+```
+
+
+It might take a while to get this data, as it is quite a large set of data, being extracted from the open street map database. Just think how long it took all the volunteers to map these areas. Compared to that, the little waiting time to get this onto your computer for your map should be nothing!
+
+
+Now you can use the `qtm()` function to draw a quick thematic map. Any ideas as to why it's called qtm yet? Let's try again. You can draw a **Q**uick **T**hematic **M**ap. 
+
+
+Again we use the `tm_shape()` and `tm_dots()` functions to specify the presentation of the map, with `tm_shape()` specitying the shape object (in this case crime_sf), and `tm_dots()` to draw symbols, including specifying the color, size, and shape of the symbols. In this case we adjust the tranparency with the `alpha` parameter. 
+
+
+```{r}
+
+qtm(gm_osm) + 
+  tm_shape(crime_sf) + 
   tm_dots(alpha=0.1) 
 ```
 
+
 Let's zoom in into Manchester city, for which we can use our manchester_lsoa map.
+
 
 ```{r}
 mc_osm <- read_osm(manchester_lsoa, type = "stamen-toner")
 
-qtm(mc_osm) + tm_shape(crime_sf) + 
+qtm(mc_osm) + 
+  tm_shape(crime_sf) + 
   tm_dots(alpha=0.1) 
 ```
 
@@ -423,13 +518,20 @@ UoM_bb <- bb("University of Manchester", width=.03, height=.02)
 UoM_osm <- read_osm(UoM_bb, type = "stamen-toner")
 qtm(UoM_osm)
 ```
+
 Now that we have our basemap we can run our small multiples. Because we have a variable that determines the types we can use a different way to tmap_arrange explained above, we can essentially ask tmap to create a map for each of the levels in our organising variable (in this case Crime.type)
 
 ```{r}
-qtm(UoM_osm) + tm_shape(crime_sf) + 
+qtm(UoM_osm) + 
+  tm_shape(crime_sf) + 
   tm_dots(size=0.5, col = "Crime.type") + 
   tm_facets("Crime.type", free.coords=FALSE) +
   tm_layout(legend.show=FALSE)
 ```
 
+
 We could do some further tweaking around for ensuring things look a bit neater. But we have covered a lot of ground today, and you should all give yourself a congratulory "well done".
+
+
+![](https://media.giphy.com/media/E67TuM1Js9VBe/giphy.gif)
+
