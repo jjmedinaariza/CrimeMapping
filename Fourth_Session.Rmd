@@ -48,7 +48,7 @@ So let's say we want to examine whether certain outlets have more crimes near th
 
 #Getting some (more) data
 
-Manchester City Council have an [Open Data Catalogue](http://open.manchester.gov.uk/open/homepage/3/manchester_open_data_catalogue) on their website, which you can use to browse through what sorts of data they release to the public. There are a some more and some less interesting data sets made available here. It's not quite as impressive as the open data from some of the cities in the US such as [New York]() or [Dallas ]() but we'll take it. 
+Manchester City Council have an [Open Data Catalogue](http://open.manchester.gov.uk/open/homepage/3/manchester_open_data_catalogue) on their website, which you can use to browse through what sorts of data they release to the public. There are a some more and some less interesting data sets made available here. It's not quite as impressive as the open data from some of the cities in the US such as [New York](https://opendata.cityofnewyork.us/) or [Dallas ](https://www.dallasopendata.com/) but we'll take it. 
 
 
 One interesting data set, especially for our questions about the different alcohol outlets is the [Licensed Premises](http://www.manchester.gov.uk/open/downloads/file/169/licensed_premises) data set. This details all the currently active licenced premises in Manchester. You can see there is a link to download now. 
@@ -187,13 +187,28 @@ Any ideas?
 
 
 
-We can use the `geocode()` function from the `ggmap` package to turn our addresses into mappable coordinates. `geocode()` geocodes a location (find latitude and longitude) using either (1) the [Data Science Toolkit](http://www.datasciencetoolkit.org/about) or (2) Google Maps. Note that when using Google you are agreeing to the Google Maps API Terms of Service at [https://developers.google.com/maps/terms](https://developers.google.com/maps/terms).
+We can use the `geocode()` function from the `ggmap` package to turn our addresses into mappable coordinates. `geocode()` geocodes a location (find latitude and longitude) using either (1) the [Data Science Toolkit](http://www.datasciencetoolkit.org/about) or (2) Google Maps. Note that when using Google you are agreeing to the Google Maps API Terms of Service at [https://developers.google.com/maps/terms](https://developers.google.com/maps/terms). One of the conditions of using Google API to geocode your points is that you *have to* display them using a Google basemap for example!
 
 
-We can, at the most basic, geocode the postcode. This will put all the establisments to the centroid of the postocde. [More on what is centroid and how big is a postcode](). 
+We can, at the most basic, geocode the postcode. This will put all the establisments to the centroid of the postocde. Postcodes are used in the United Kingdom as alphanumeric codes, that were devised by Royal Mail. A full postcode is known as a "postcode unit" and designates an area with a number of addresses or a single major delivery point. [You can search the Royal Mail for infor on post codes here.](https://www.royalmail.com/business/search/google/POSTCODE). 
+
+Here is a map of the postcode areas in Greater Manchester: 
+
+![](https://upload.wikimedia.org/wikipedia/commons/thumb/1/13/M_postcode_area_map.svg/750px-M_postcode_area_map.svg.png)
 
 
-First though, we have to specify in the address *where* our postcode is. Just like when you mail a postcard (people still do this, right?), you have to specify what country you want it to go to first, and then specify the postcode and address. So we will create a new variable (column) in our dataframe that pastes together the postcode with a suffix to specify our country, in this case ", UK". To do this, we use the `paste()` function. `paste()` just *pastes* together two or more text values, separating them by whatever separator you want. For example, if I wanted to have people's name displayed in different names I could use paste in this way: 
+Now the centroid of the post code area represents the central point of the shapefile. For example, here you can see some polygons with their centroids illustrated by points: 
+
+
+![](https://i.stack.imgur.com/6R9sn.png)
+
+
+
+This is not quite as precise as geocoding the actual address, and we will return to this in the homework, but let's just stick with this approach for now.
+
+
+
+So `geocode()` will help us get the coordinates for the relevant post code centroid. First though, we have to specify in the address *where* our postcode is. Just like when you mail a postcard (people still do this, right?), you have to specify what country you want it to go to first, and then specify the postcode and address. So we will create a new variable (column) in our dataframe that pastes together the postcode with a suffix to specify our country, in this case ", UK". To do this, we use the `paste()` function. `paste()` just *pastes* together two or more text values, separating them by whatever separator you want. For example, if I wanted to have people's name displayed in different names I could use paste in this way: 
 
 ```{r}
 
@@ -280,7 +295,8 @@ And now we have a column called `longitude` for longitude and a column called `l
 #Making interactive maps with leaflet 
 
 
-So this is a super brief intro into some of the cool things you can do with the leaflet package. There are comprehensive tutorials available online, for example [here](https://rstudio.github.io/leaflet/).
+Thus far we have explored a few approaches to making maps. We made great use of the *tmaps* package for example in the past few weeks. Now we will introduce another approach to making maps, so this is a super brief intro into some of the cool things you can do with the leaflet package. There are comprehensive tutorials available online, for example [here](https://rstudio.github.io/leaflet/).
+
 
 [Leaflet](http://leafletjs.com/) is the leading open-source JavaScript library for mobile-friendly interactive maps. It is very most popular, used by websites ranging from The New York Times and The Washington Post to GitHub and Flickr, as well as GIS specialists like OpenStreetMap, Mapbox, and CartoDB.
 
@@ -312,6 +328,7 @@ m <- leaflet() %>%
   addTiles()  
 ```
 
+
 And just print it:
 ```{r}
 m  
@@ -321,7 +338,7 @@ m
 
 You might of course want to add some content to your map. 
 
-##Adding points manuall:
+##Adding points manually:
 
 You can add a point manually:
 
@@ -332,7 +349,9 @@ m <- leaflet() %>%
 m  
 ```
 
+
 Or many points manually:
+
 
 ```{r}
 
@@ -788,3 +807,38 @@ Today we learned to:
 - subset points that are within a certain area using a **spatial operation**
 - create new polygons by generating **buffers** around points
 - count the number of points that fall within a polygon (known as **points in polygon**)
+
+
+
+#Homework
+
+In the homework you will now apply your learning to a new problem. To do so, please complete the following tasks: 
+
+###**Geocode the addresses:** 
+Use the geocode function to geocode, but this time pass the actual address values, rather than just the post code. 
+
+You can geocode from addresses. For example, if we want to geocode the location of [Shoryu ramen](https://www.shoryuramen.com/stores/76-manchester), we could use the address to do so:
+
+```{r}
+geocode("1 Piccadilly, Manchester M1 1RG", source = "dsk")
+```
+
+You can see that this is slightly different than the postcode centroid: 
+
+```{r}
+geocode("M1 1RG", source = 'dsk')
+```
+
+
+- **1) Discuss why you think the geocode for the address is different than the geocode for the postcode**
+- **2) Geocode the address for all the city centre licensed premises**
+- **3) Did this work OK? Do you have any geocoded to weird locations? Why do you think this might be**
+- **4) Fix any issues with geocoding that you identified above**
+
+
+
+
+Make sure you think a little bit about this. Not only do you have to consider what variable to pass to the `geocode()` function, but also whether that's enough information to get the relevant coordinates. 
+
+
+
