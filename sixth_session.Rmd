@@ -5,7 +5,7 @@ date: "28 February 2018"
 output: html_document
 ---
 
-```{r}
+```{r, message=FALSE, warning=FALSE}
 library(sf)
 library(tmap)
 library(dplyr)
@@ -15,7 +15,7 @@ library(spdep)
 
 ##Get data
 
-So, let's start by getting some data. We are going to take some of the data from past weeks. In getting the data ready you will have one more opportunity to practice how to read data into R but also how to perform some basic spatial checks, transformations and operations. It may seem like you have already done some of this stuff. But that's the point to force you to practice. The more you do this stuff, the easier it will be and trust us eventually things will click. First let's get the LSOA boundary data.
+So, let's start by getting some data. We are going to take some of the data from past weeks. In getting the data ready you will have one more opportunity to practice how to read data into R but also how to perform some basic spatial checks, transformations and operations. It may seem like you have already done some of this stuff. But that's the point: to force you to practice. The more you do this stuff, the easier it will be and -trust us- eventually things will click and become second nature. First let's get the LSOA boundary data.
 
 ```{r}
 shp_name <- "BoundaryData/england_lsoa_2011.shp"
@@ -209,6 +209,8 @@ The most well known measure of spatial autocorrelation is the Moran's I. It was 
 
 Before we can use the functions from spdep to compute the global Moran's I we need to create a ‘listw’ type spatial weights object (instead of the matrix we used above). To get the same value as above we use “style=’B’” to use binary (TRUE/FALSE) distance weights.
 
+(try row standardising)
+
 ```{r}
 ww <-  nb2listw(w, style='B')
 ww
@@ -220,15 +222,17 @@ Now we can use the moran function. Have a look at ?moran. The function is define
 moran(bur_ccsp$burglary, ww, n=length(ww$neighbours), S0=Szero(ww))
 ```
 
-So the Moran's I here is 0.12, which is not very large. But still. We can now run a test of statistical significance for this statistic. The only appropriate way of doing so is using a Monte Carlo procedure.
+So the Moran's I here is 0.12, which is not very large. But still. We can now run a test of statistical significance for this statistic. 
 
-The way it works is that the values of burglary are randomly assigned to the polygons, and the Moran’s I is computed. This is repeated several times to establish a distribution of expected values. The observed value of Moran’s I is then compared with the simulated distribution to see how likely it is that the observed values could be considered a random draw.
+The Spatial Autocorrelation (Global Moran's I) tool is an inferential statistic, which means that the results of the analysis are always interpreted within the context of its null hypothesis. For the Global Moran's I statistic, the null hypothesis states that the attribute being analyzed is randomly distributed among the features in your study area; said another way, the spatial processes promoting the observed pattern of values is random chance. Imagine that you could pick up the values for the attribute you are analyzing and throw them down onto your features, letting each value fall where it may. This process (picking up and throwing down the values) is an example of a random chance spatial process. When the p-value returned by this tool is statistically significant, you can reject the null hypothesis. 
+
+In some software you can use statistical tests invoking asymptotic theory, but the only appropriate way of doing these tests is by using a Monte Carlo procedure. The way Monte Carlo works is that the values of burglary are randomly assigned to the polygons, and the Moran’s I is computed. This is repeated several times to establish a distribution of expected values. The observed value of Moran’s I is then compared with the simulated distribution to see how likely it is that the observed values could be considered a random draw.
 
 ```{r}
 moran.mc(bur_ccsp$burglary, ww, nsim=99)
 ```
 
-So, the probability of observing this Moran's I if the null hypothis was true is 0.09. This is higher than our alpha level of 0.05. In this case, we can conclude that there isn't a significant spatial autocorrelation.
+So, the probability of observing this Moran's I if the null hypothis was true is 0.09. This is higher than our alpha level of 0.05. In this case, we can conclude that there isn't a significant global spatial autocorrelation.
 
 We can make a “Moran scatter plot” to visualize spatial autocorrelation. Note the row standardisation of the weights matrix.
 
@@ -236,6 +240,7 @@ We can make a “Moran scatter plot” to visualize spatial autocorrelation. Not
 rwm <- mat2listw(wm, style='W')
 # Checking if rows add up to 1 (they should)
 mat <- listw2mat(rwm)
+#This code is simply adding each row to see if we get one when we add their values up, we are only displaying the first 15 rows in the matrix
 apply(mat, 1, sum)[1:15]
 ```
 
@@ -245,7 +250,9 @@ Now we can plot:
 moran.plot(bur_ccsp$burglary, rwm)
 ```
 
-The X axis represents the values of our burglary variable in each unit (each LSOA) and the Y axis represents a spatial lag of this variable. A spatial lag in this context is simply the average value of the burglary count in the areas that are considered neighours of each LSOA. So we are plotting the value of burglary against the average value of burglary in the neighbours. And you can see the correlation is almost flat here.
+The X axis represents the values of our burglary variable in each unit (each LSOA) and the Y axis represents a spatial lag of this variable. A spatial lag in this context is simply the average value of the burglary count in the areas that are considered neighours of each LSOA. So we are plotting the value of burglary against the average value of burglary in the neighbours. And you can see the correlation is almost flat here. As with any correlation measure, you could get **positive spatial autocorrelation**, that would mean that as you move further to the right in the X axis you have higher levels of burglary in the surrounding area. This is what we see here. But the correlation is fairly low and as we saw is not statistically significant. You can also obtain **negative spatial autocorrelation**. That is, that would mean that areas with high level of crime *tend* (it's all about the global average effect!) to be surrounded by areas with low levels of crime. This is clearly not what we see here.
+
+It is very important to understand that global statistics like the spatial autocorrelation (Global Moran's I) tool assess the overall pattern and trend of your data. They are most effective when the spatial pattern is consistent across the study area. In other words, you may have clusters (local pockets of autocorrelation), without having clustering (global autocorrelation). This may happen if the sign of the clusters negate each other.
 
 **Homework 3 (Optional Practice)**
 *You know what is coming, don't you? Yes, you need to compute the Moran's I for burglary again. But this time, you need to do it for the whole of Manchester city. I won't mark you down if you don't try this. But why wouldn't you?*

@@ -1,0 +1,161 @@
+---
+title: "Week 7: LISA maps"
+author: "Juanjo Medina"
+date: "3 March 2018"
+output: html_document
+---
+
+
+```{r, message=FALSE, warning=FALSE}
+library(sf)
+library(tmap)
+library(dplyr)
+library(sp)
+library(spdep)
+```
+
+##Get data and built the weight matrix
+
+For this week we will be going back to the data from last week about burglary in Manchester city. Below I include the code in one big chunk. This is code we have already used and covered in previous sessions.
+
+```{r}
+#Get the boundary data
+shp_name <- "BoundaryData/england_lsoa_2011.shp"
+manchester_lsoa <- st_read(shp_name)
+lsoa_WGS84 <- st_transform(manchester_lsoa, 4326)
+rm(manchester_lsoa)
+#Read into R
+crimes <- read.csv("https://raw.githubusercontent.com/jjmedinaariza/CrimeMapping/master/gmpcrime.csv")
+#Filter out to select burglary
+burglary <- filter(crimes, crime_type == "Burglary")
+#Transform into spatial object
+burglary_spatial = st_as_sf(burglary, coords = c("long", "lat"), 
+                 crs = 4326, agr = "constant")
+#Remove redundant non spatial burglary object
+rm(burglary)
+rm(crimes)
+#Select burglaries that intersect with the Manchester city LSOA map.
+bur_m <- st_intersects(lsoa_WGS84, burglary_spatial)
+bur_m <- burglary_spatial[unlist(bur_mc),]
+#Remove redundant objects
+rm(burglary_spatial)
+#Point in polygon spatial operation
+burglaries_per_lsoa <- bur_m %>% 
+  st_join(lsoa_WGS84, ., left = FALSE) %>% 
+  count(code)
+#Let's rename the column with the count of burglaries (n) into something more meaningful
+burglaries_per_lsoa <- rename.sf(burglaries_per_lsoa, burglary = n)
+#Plot with tmap
+tm_shape(burglaries_per_lsoa) + 
+  tm_fill("burglary", style = "quantile", palette = "Reds") +
+  tm_borders(alpha = 0.1) +
+  tm_layout(main.title = "Burglary counts", main.title.size = 0.7 ,
+            legend.position = c("right", "bottom"), legend.title.size = 0.8)
+
+```
+
+Now that we have the data we need to coerce our newly created sf object into sp and then generate the wieght matrix. Again, what we do here is stuff we cover last week. In fact, if you did the optional homework you will also have run this code.
+
+```{r}
+#Coerce sf into sp
+burglary_m <- as(burglaries_per_lsoa, "Spatial")
+#Generate list of neighbours using the Queen criteria
+w <- poly2nb(burglary_m, row.names=burglary_m$lsoa_code)
+#Generate list with weights using row standardisation
+ww <-  nb2listw(w, style='W')
+
+```
+
+##Generating and visualising the LISA measures
+
+The first step before we can generate the LISA map is to compute the local Moran's I. The initial part of the video presentation by Luc Anselin that we expected you to watch explains the formula and logic underpinning these computations and we won't reiterate here that detail. But at least a a general reminder:
+
+*"global tests for spatial autocorrelation introduced last week are calculated from the local relationship between the values observed at a spatial entity and its neighbours, for the neighbourhood definition chosen. Because of this, we can break global measures down into their components, and by extension, construct localised tests intended to detect **'clusters'** -observations with very similar neighbours- and"* **spatial outliers** *"observations with very different neighbours"* (Bivand et al. 201)
+
+Let's first look at the Moran's scatterplot:
+
+```{r}
+moran.plot(burglary_m$burglary, ww)
+```
+
+Notice how the plot is split in 4 quadrants. The top right corner belongs to areas that have high level of burglary and are surrounded by other areas that have above the average level of burglary. This are the high-high locations that Luc Anselin referred to. The bottom left corner belongs to the low-low areas. These are areas with low level of burglary and surrounded by areas with below average levels of burglary. Both the high-high and low-low represent clusters. A high-high cluster is what you may refer to as a hot spot. And the low-low clusters represent cold spots. In the opposite diagonal we have *spatial outliers*. They are not outliers in the standard sense, extreme observations, they are outliers in that they are surrounded by areas that are very unlike them. So you could have high-low spatial outliers, areas with high levels of burglary and low levels of surrounding burglary, or low-high spatial outliers, areas that have themselves low levels of burglary (or whatever else we are mapping) and that are surrounded by areas with above average levels of burglary.
+
+You can also see here that the positive spatial autocorrelation is more noticeable when we focus on the whole of Manchester city, unlike what we observed when only looked at Manchester city. You can check this running the global Moran's I.
+
+```{r}
+moran(burglary_m$burglary, ww, n=length(ww$neighbours), S0=Szero(ww))
+moran.mc(burglary_m$burglary, ww, nsim=99999)
+```
+
+You can see that the global Moran's is 0.32 and that is highly significant. There is indeed global spatial autocorrelation. Knowing this we can try to decompose this, figure out what is driving this global measure.
+
+To compute the local Moran we can use a function from the *spdep* package.
+
+```{r}
+locm_bm <- localmoran(burglary_m$burglary, ww)
+summary(locm_bm)
+```
+
+The first column provides the summary statistic for the local moran statistic. Being local you will have one for each of the areas. The last column gives you a p value for this statistic. In order to produce the LISA map we need to do some previous work. First we are going to create some new variables that we are going to need:
+
+```{r}
+#scale the variable of interest and save it to a new column
+burglary_m$S_burglary <- scale(burglary_m$burglary) %>% as.vector()
+#create a spatial lag variable and save it to a new column
+burglary_m$lag_s_burglary <- lag.listw(ww, burglary_m$S_burglary)
+#Check the summaries to ensure nothing weird is going on
+summary(burglary_m$S_burglary)
+summary(burglary_m$lag_s_burglary)
+```
+
+When we scale burglary what we are doing is re-scaling the values so that the mean is zero. See an explanation of what this does [here](http://www.gastonsanchez.com/visually-enforced/how-to/2014/01/15/Center-data-in-R/). We can create a Moran scatter plot so that you see that nothing has changed apart from the scale in wich we are using the variables. The observations that are influential are higlighted in the plot as you can see.
+
+```{r}
+x <- burglary_m$S_burglary
+y <- burglary_m$lag_s_burglary
+xx <- data_frame(x,y)
+moran.plot(x, ww)
+```
+
+We are now going to create a new variable to identify the quadrant in which each observation falls within the Moran Scatter plot, so that we can tell apart the high-high, low-low, high-low, and low-high areas. We will only identify those that are significant according to the p value that was provided by the local moran function.
+
+```{r}
+#We initialise the variable dismising the non-significant ones
+burglary_m$quad_sig <- NA
+#Now we identify the significant observations in the high-high quadrant
+burglary_m[(burglary_m$S_burglary >= 0 &
+             burglary_m$lag_s_burglary >= 0) &
+             (locm_bm[,5] <= 0.05), "quad_sig"] <- 1
+##low low quadrant
+burglary_m[(burglary_m$S_burglary <= 0 &
+             burglary_m$lag_s_burglary <= 0) &
+             (locm_bm[,5] <= 0.05), "quad_sig"] <- 2
+
+burglary_m[(burglary_m$S_burglary >= 0 &
+             burglary_m$lag_s_burglary <= 0) &
+             (locm_bm[,5] <= 0.05), "quad_sig"] <- 3
+
+burglary_m[(burglary_m$S_burglary <= 0 &
+             burglary_m$lag_s_burglary >= 0) &
+             (locm_bm[,5] <= 0.05), "quad_sig"] <- 4
+#non significant observations
+burglary_m[(locm_bm[,5] > 0.05), "quad_sig"] <- 5
+```
+
+Now that we have created the new variable we can try to plot it. We are going to rely on base R for this:
+
+```{r}
+#Set the breaks for the thematic map classes
+breaks <-seq(1,5,1)
+#Set the corresponding labels for the classes
+labels <- c("high-high", "low-low", "high-low", "low-high", "not signif.")
+#This is necessary for making a map
+np <- findInterval(burglary_m$quad_sig, breaks)
+#Assign colors to each map class
+colors <- c("red", "blue", "lightpink", "skyblue2", "white")
+plot(burglary_m, col = colors[np])
+mtext("Local Moran's I", cex = 1.5, side = 3, line = 1)
+legend("topleft", legend = labels, fill = colors, bty = "n")
+
+```
+
