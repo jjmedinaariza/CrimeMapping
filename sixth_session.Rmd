@@ -1,6 +1,6 @@
 ---
 title: "Spatial Autocorrelation"
-author: "Juanjo Medina"
+author: "Juanjo Medina and Reka Solymosi"
 date: "28 February 2018"
 output: html_document
 ---
@@ -68,7 +68,7 @@ burglaries_per_lsoa <- bur_mc %>%
   st_join(lsoa_WGS84, ., left = FALSE) %>% 
   count(code)
 #Let's rename the column with the count of burglaries (n) into something more meaningful
-burglaries_per_lsoa <- rename.sf(burglaries_per_lsoa, burglary = n)
+burglaries_per_lsoa <- rename(burglaries_per_lsoa, burglary = n)
 #Plot with tmap
 tm_shape(burglaries_per_lsoa) + 
   tm_fill("burglary", style = "quantile", palette = "Reds") +
@@ -133,7 +133,7 @@ So now we have a new spatial object cc_burglary with the 23 LSOA units that comp
 
 ##Creating a list of neighbours
 
-It would be very, very tedious having to identify the neighbours of all the areas in our study area in the way we have done in homework 1. That's why we love computers. We can automotise tedious work so that they do it and we have more time to do fun stuff. We can use code to get the computer to establish what areas are next to each other (if we are using a contiguity based definition of being a neighbour).
+It would be very, very tedious having to identify the neighbours of all the areas in our study area in the way we have done in homework 1. That's why we love computers. We can automate tedious work so that they do it and we have more time to do fun stuff. We can use code to get the computer to establish what areas are next to each other (if we are using a contiguity based definition of being a neighbour).
 
 We have already discussed how sf is new kid in town and although package developers are quickly trying to adapt their packages to work with sf, many of the existing spatial packages still expect sp objects. So to illustrate the concepts in this week session we are first going to turn our sf object into sp.
 
@@ -201,7 +201,7 @@ wm_rs <- nb2mat(w, style='W')
 wm_rs
 ```
 
-Rwo standardisation of a matrix ensure that the sum of the rows adds up to 1. So, for example, if you have four neighbours and that has to add up to 4, you need to divide 1 by 4, which gives you 0.25. So in the columns for a polygon with 4 neighbours you will see 0.25 in the column representing each of the neighbours.
+Row standardisation of a matrix ensure that the sum of the rows adds up to 1. So, for example, if you have four neighbours and that has to add up to 4, you need to divide 1 by 4, which gives you 0.25. So in the columns for a polygon with 4 neighbours you will see 0.25 in the column representing each of the neighbours.
 
 ##Compute Moran's I
 
@@ -228,11 +228,19 @@ The Spatial Autocorrelation (Global Moran's I) tool is an inferential statistic,
 
 In some software you can use statistical tests invoking asymptotic theory, but the only appropriate way of doing these tests is by using a Monte Carlo procedure. The way Monte Carlo works is that the values of burglary are randomly assigned to the polygons, and the Moran’s I is computed. This is repeated several times to establish a distribution of expected values. The observed value of Moran’s I is then compared with the simulated distribution to see how likely it is that the observed values could be considered a random draw.
 
+If confused, watch [this quick video](https://www.youtube.com/watch?v=5nM5e2_1OQ0) on monte carlo simulations. 
+
+We use the function `moran.mc()` to run a permutation test for Moran's I statistic calculated by using some number of random permutations of our numeric vector, for the given spatial weighting scheme, to establish the rank of the observed statistic in relation to the simulated values.
+
+We need to specify our variable of interest (burglary), the listw object we created earlier (ww), and the number of permutations we want to run (here we choose 99).
+
 ```{r}
-moran.mc(bur_ccsp$burglary, ww, nsim=99)
+set.seed(1234)
+burg_moranmc_results <- moran.mc(bur_ccsp$burglary, ww, nsim=99)
+burg_moranmc_results
 ```
 
-So, the probability of observing this Moran's I if the null hypothis was true is 0.09. This is higher than our alpha level of 0.05. In this case, we can conclude that there isn't a significant global spatial autocorrelation.
+So, the probability of observing this Moran's I if the null hypothis was true is `r I(burg_moranmc_results$p.value)`. This is higher than our alpha level of 0.05. In this case, we can conclude that there isn't a significant global spatial autocorrelation.
 
 We can make a “Moran scatter plot” to visualize spatial autocorrelation. Note the row standardisation of the weights matrix.
 
@@ -253,6 +261,10 @@ moran.plot(bur_ccsp$burglary, rwm)
 The X axis represents the values of our burglary variable in each unit (each LSOA) and the Y axis represents a spatial lag of this variable. A spatial lag in this context is simply the average value of the burglary count in the areas that are considered neighours of each LSOA. So we are plotting the value of burglary against the average value of burglary in the neighbours. And you can see the correlation is almost flat here. As with any correlation measure, you could get **positive spatial autocorrelation**, that would mean that as you move further to the right in the X axis you have higher levels of burglary in the surrounding area. This is what we see here. But the correlation is fairly low and as we saw is not statistically significant. You can also obtain **negative spatial autocorrelation**. That is, that would mean that areas with high level of crime *tend* (it's all about the global average effect!) to be surrounded by areas with low levels of crime. This is clearly not what we see here.
 
 It is very important to understand that global statistics like the spatial autocorrelation (Global Moran's I) tool assess the overall pattern and trend of your data. They are most effective when the spatial pattern is consistent across the study area. In other words, you may have clusters (local pockets of autocorrelation), without having clustering (global autocorrelation). This may happen if the sign of the clusters negate each other.
+
+
+But don't just take our word for how important this is, or how it's commonly applied in criminological research. Instead, now that you've gone through on how to do this, and have begun to get a sense of understanding, read the following paper on [https://link.springer.com/article/10.1023/A:1007592124641](https://link.springer.com/article/10.1023/A:1007592124641) where the authors make use of Moran's I to explain spatial characteristics of homicide. You will likely see this in other papers as well, and now you will know what it means and why it's important. 
+
 
 **Homework 3 (Optional Practice)**
 *You know what is coming, don't you? Yes, you need to compute the Moran's I for burglary again. But this time, you need to do it for the whole of Manchester city. I won't mark you down if you don't try this. But why wouldn't you?*

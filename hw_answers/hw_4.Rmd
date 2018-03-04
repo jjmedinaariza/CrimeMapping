@@ -1,0 +1,131 @@
+---
+title: "Homework 4 answers"
+author: "Reka Solymosi and Juanjo Medina"
+date: "19/02/2018"
+output: html_document
+---
+
+##Below are the answers for Homework 4
+
+### **1) Discuss why you think the geocode for the address is different than the geocode for the postcode**
+
+
+The address provides you a more specific spatial information to geocode. When we were geocoding using the postcode only, each licensed premise was given the coordinates for the centroid of that postcode. Remember a postcode is a polygon, and the centroid represents the middle point. But actually the address will have more detail, things like house number, street name, and so on. When we pass the whole address as the text value to geocode, we give more detail, and get a more accurate geocode. This is the difference. 
+
+
+
+### **2) Geocode the address for all the city centre licensed premises**
+
+Here your anwers will differ by how clever you were being from the start. The exercise is meant to let you experience making some mistakes, so that you learn from them. But there is always the chance that you predicted what would cause issues, and so pre-empted some of the issues. I will go through this with all the issues experienced. 
+
+
+SO let's say you start off with using the `geocode()` function to create a new latitude and longitude column from the address variable. Remember you need your libraries loaded and your data read in:
+
+```{r}
+
+library(ggmap)
+
+
+lic_prem <- read.csv("http://www.manchester.gov.uk/open/download/downloads/id/169/licensed_premises.csv")
+ city_centre_prems <- lic_prem %>%
+   filter(grepl("M1 ", POSTCODE) )
+ 
+
+```
+
+
+Now let's give it a go :
+
+
+```{r}
+
+city_centre_prems$address_coords <- geocode(city_centre_prems$LOCATIONTEXT, source = 'dsk')
+
+```
+
+
+Flatten this: 
+
+```{r}
+city_centre_prems$add_longitude <- city_centre_prems$address_coords$lon
+city_centre_prems$add_latitude <- city_centre_prems$address_coords$lat
+```
+
+We can have plot our data now to see if it worked: 
+
+```{r}
+
+library(leaflet)
+
+leaflet(data = city_centre_prems) %>%
+  addProviderTiles("Stamen.Toner") %>% 
+  addMarkers(lng=~add_longitude, lat=~add_latitude, popup=~as.character(PREMISESNAME), label = ~as.character(PREMISESNAME))
+
+
+```
+
+- **3) Did this work OK? Do you have any geocoded to weird locations? Why do you think this might be?**
+
+
+Well we should be seeing some points appear in Mancheser, for sure, but then ther eare quite a few that appear in the USA (perhaps to there being [Manchester](https://en.wikipedia.org/wiki/Manchester,_New_Hampshire) there as well) and also elsewhere across the world. So while the address is quire precise, it's missing some of the more high level information that we might want, such as country! Instead, the best way to geocode is to include all the information. 
+
+## **4) Fix any issues with geocoding that you identified above**
+
+
+We can use the `paste()` function to create this: 
+
+
+```{r}
+
+city_centre_prems$address2 <- paste(city_centre_prems$LOCATIONTEXT, city_centre_prems$POSTCODE, "UK", sep=", ")
+
+```
+
+
+
+Now we can use this to geocode:
+
+
+```{r}
+city_centre_prems$address_coords <- geocode(city_centre_prems$address2, source = 'dsk')
+city_centre_prems$add_longitude <- city_centre_prems$address_coords$lon
+city_centre_prems$add_latitude <- city_centre_prems$address_coords$lat
+```
+
+Let's have a look at this now: 
+
+```{r}
+leaflet(data = city_centre_prems) %>%
+  addProviderTiles("Stamen.Toner") %>% 
+  addMarkers(lng=~add_longitude, lat=~add_latitude, popup=~as.character(PREMISESNAME), label = ~as.character(PREMISESNAME))
+
+```
+
+
+
+This appears slightly better, although we still have a Carluccio's that appears in Mongolia. This should illustrate the importance of checking your data. Let's see what happened. The address for this particular location is: 
+
+```{r}
+
+geocode("Unit 21, Piccadilly Train Stn, Fairfield Street, Manchester,  M1 2PB, UK", source="dsk")
+```
+
+
+Which is a point somewhere in Mongolia... Why? Who knows. Gremlins. In this case, we can try to take away some information until we get a more realistic point: 
+
+```{r}
+
+geocode("Piccadilly Train Stn, Fairfield Street, Manchester,  M1 2PB, UK", source="dsk")
+```
+
+
+You will now see this point is actually in Piccailly Train Station. So this would be a better point to use. In these cases there is no "quick fix". You can see that the majority of the points seem to have worked, but in a few cases you will have to make tweaks in order to get all your data in right. 
+
+
+#Lessons learned
+
+The most important thing to consider here is to never treat your algorithms as black boxes, that just "do something". Instead, make sure that you always sense check your data, your results, and you keep an eye out for anything weird, any deviations from what you might expect. It's easy to catch this when it's something so obvious as a manchester city centre restaurant appearing on the wrong side of the globe, but often your errors will be much more subtle. So be careful, be vigilant, and question everything. 
+
+![](https://media.giphy.com/media/5XRB3Ay93FZw4/giphy.gif)
+
+

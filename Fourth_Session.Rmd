@@ -174,7 +174,7 @@ city_centre_prems <- lic_prem %>%
 ```
 
 
-Now we only have 284 observations (see your global environment), which is a much more manageable number. 
+Now we only have `r I(nrow(city_centre_prems))` observations (see your global environment), which is a much more manageable number. 
 
 
 ##Geocoding from an address
@@ -420,21 +420,21 @@ For our spatial operations we will be using functions that belong to the `sf` pa
 library(sf)
 ```
 
-##Projections revisited
+##Coordinate reference systems revisited
 
-One important note before we begin to do this brings us back to some of the learning from the second session on map projections. Remember talking about this? We spoke about all the ways of flattening out the earth, and what that means for the maps, and also how the most common ones we will use are **WGS 84** and **British National Grid**? If this is bringing back no memories at all, please go back to your lab notes from the second session to review. 
+One important note before we begin to do this brings us back to some of the learning from the second session on map projections and coordinate reference systems, like we discussed in the lecture today. We spoke about all the ways of flattening out the earth, and ways of making sense what that means for the maps, and also how to be able to point to specific locations within these. The latter refers to the **Coordinate Reference System** or CRS the most common ones we will use are **WGS 84** and **British National Grid**. 
 
 
-Now that you've reviewed (or knew this all along) we can come back to our important note. 
+So why are we talking about this? 
 
 
 ***It is important to note that spatial operations that use two spatial objects rely on both objects having the same coordinate reference system***
 
 
-If we are looking to carry out operations that involve two different spatial object, they need to have the same projection!!! Funky weird things happen when this condition is not met, so beware!
+If we are looking to carry out operations that involve two different spatial objects, they need to have the same CRS!!! Funky weird things happen when this condition is not met, so beware!
 
 
-So how do we know what projection our spatial objects are? Well the `sf` package contains a handy function called `st_crs()` which let's us check. All you need to pass into the brackets of this function is the name of the object you want to know the projection of. 
+So how do we know what CRS our spatial objects are? Well the `sf` package contains a handy function called `st_crs()` which let's us check. All you need to pass into the brackets of this function is the name of the object you want to know the CRS of. 
 
 
 So let's check what is the CRS of our licenced premises:
@@ -446,12 +446,12 @@ st_crs(city_centre_prems)
 
 
 
-You can see that we get the projection returned as `NA`. Can you think of why? Have we made this into a spatial object? Or is this merely a dataframe with a latitude and longitude column? The answer is really in the question here. 
+You can see that we get the CRS returned as `NA`. Can you think of why? Have we made this into a spatial object? Or is this merely a dataframe with a latitude and longitude column? The answer is really in the question here. 
 
 
 So we need to convert this to a sf object, or a spatial object, and make sure that R knows that the latitude and the longitude columns are, in fact, coordinates. 
 
-In the `st_as_sf()` function we specify what we are transforming (the name of our dataframe), the column names that have the coordinates in them (longitude and latitude), the CRS we are using (4326 is the code for WGS 84, which is the projection that uses latitude and longitude coordinates (remember BNG uses Easting and Northing)), and finally *agr*, the attribute-geometry-relationship, specifies for each non-geometry attribute column how it relates to the geometry, and can have one of following values: "constant", "aggregate", "identity". "constant" is used for attributes that are constant throughout the geometry (e.g. land use), "aggregate" where the attribute is an aggregate value over the geometry (e.g. population density or population count), "identity" when the attributes uniquely identifies the geometry of particular "thing", such as a building ID or a city name. The default value, NA_agr_, implies we don't know.
+In the `st_as_sf()` function we specify what we are transforming (the name of our dataframe), the column names that have the coordinates in them (longitude and latitude), the CRS we are using (4326 is the code for WGS 84, which is the CRS that uses latitude and longitude coordinates (remember BNG uses Easting and Northing)), and finally *agr*, the attribute-geometry-relationship, specifies for each non-geometry attribute column how it relates to the geometry, and can have one of following values: "constant", "aggregate", "identity". "constant" is used for attributes that are constant throughout the geometry (e.g. land use), "aggregate" where the attribute is an aggregate value over the geometry (e.g. population density or population count), "identity" when the attributes uniquely identifies the geometry of particular "thing", such as a building ID or a city name. The default value, NA_agr_, implies we don't know.
 
 ```{r}
 
@@ -461,7 +461,7 @@ cc_spatial = st_as_sf(city_centre_prems, coords = c("longitude", "latitude"),
 ```
 
 
-Now let's check the projection of this spatial version of our licensed premises: 
+Now let's check the CRS of this spatial version of our licensed premises: 
 
 
 ```{r}
@@ -469,7 +469,7 @@ st_crs(cc_spatial)
 ```
 
 
-We can now see that we have this coordinate system as WGS 84. We need to then make sure that any other spatial object with which we want to perform spatial operations is also in the same projection. 
+We can now see that we have this coordinate system as WGS 84. We need to then make sure that any other spatial object with which we want to perform spatial operations is also in the same CRS. 
 
 
 ##Meet a new format of shapefile: geojson
@@ -541,7 +541,7 @@ st_crs(city_centre)
 
 Aha, the key is in the `27700`. This code in fact stands for.... British National Grid...! 
 
-So what can we do? We can **reproject** our spatial object. Yepp, we can convert between projections. 
+So what can we do? We can **transform** our spatial object. Yepp, we can convert between CRS. 
 
 
 So let's do this now. To do this, we can use the `st_transform()` function. 
@@ -832,13 +832,15 @@ geocode("M1 1RG", source = 'dsk')
 
 - **1) Discuss why you think the geocode for the address is different than the geocode for the postcode**
 - **2) Geocode the address for all the city centre licensed premises**
-- **3) Did this work OK? Do you have any geocoded to weird locations? Why do you think this might be**
+- **3) Did this work OK? Do you have any geocoded to weird locations? Why do you think this might be?**
 - **4) Fix any issues with geocoding that you identified above**
 
 
 
 
 Make sure you think a little bit about this. Not only do you have to consider what variable to pass to the `geocode()` function, but also whether that's enough information to get the relevant coordinates. 
+
+
 
 
 
