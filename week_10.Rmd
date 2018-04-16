@@ -1,0 +1,54 @@
+---
+title: "Week 10: Title here"
+author: "Juanjo Medina and Reka Solymosi"
+output: html_document
+---
+
+##10.1 Introduction
+
+
+
+Before we do any of this, we need to load the libraries we will use today:
+
+```{r}
+library(sf)
+library(tmap)
+library(sp)
+library(spdep)
+```
+
+
+Then we will bring back the data from last week:
+
+```{r}
+##R in Windows have some problems with https addresses, that's why we need to do this first:
+urlfile<-'https://s3.amazonaws.com/geoda/data/ncovr.zip'
+download.file(urlfile, 'ncovr.zip')
+#Let's unzip and create a new directory (ncovr) in our working directory to place the files
+unzip('ncovr.zip', exdir = 'ncovr')
+
+```
+
+Last week we did not treated the data as spatial and, consequently, relied on the csv file. But notice that in the unzip ncovr file there is also a shapefile that we can load as a spatial object into R:
+
+```{r}
+shp_name <- "ncovr/ncovr/NAT.shp"
+ncovr_sf <- st_read(shp_name)
+```
+
+#10.2 Interpreting SPatial Lag COefficiences
+
+##Model from HW
+
+PUT RECAP HERE
+
+##impacts()
+
+take from rpub [here](https://rpubs.com/corey_sparks/109650)
+
+##10.3 Cartograms
+
+##10.4 bins / hexbins
+
+##10.5 MAUP
+
