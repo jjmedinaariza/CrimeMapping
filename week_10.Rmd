@@ -65,7 +65,7 @@ As you can see if you read through the comments there, this bit of code checks e
 
 Then we will bring back the data from last week:
 
-```{r}
+```{r, eval=FALSE}
 ##R in Windows have some problems with https addresses, that's why we need to do this first:
 urlfile<-'https://s3.amazonaws.com/geoda/data/ncovr.zip'
 download.file(urlfile, 'ncovr.zip')
@@ -81,9 +81,9 @@ shp_name <- "ncovr/ncovr/NAT.shp"
 ncovr_sf <- st_read(shp_name)
 ```
 
-#10.2 Interpreting Spatial Lag COefficiences
+#10.2 Interpreting Spatial Lag Coefficiences
 
-Today we are mostly going to go back to some issues about geographical representation (mapping rates, cartograms, bins) and other more general issues that are quite revelant when we talk about spatial analysis, and are integral part of a spatial analysis course (e.g., the modifiable area unit problem). But before we do any of that we need to go back to something we mentioned last week about the spatial lag models.
+Today we are mostly going to go back to some issues about geographical representation (mapping rates, bins) and other more general issues that are quite revelant when we talk about spatial analysis, and are integral part of a spatial analysis course (e.g., the modifiable area unit problem). But before we do any of that we need to go back to something we mentioned last week about the spatial lag models.
 
 Remember that last week we fitted the following spatial lag model after creating a spatial weight matrix based on Queen first order neighbours:
 
